@@ -6,6 +6,8 @@ namespace QuicNet
 {
     public class QuicApi : IDisposable
     {
+
+
         //public QuicRegistration OpenRegistration()
         //{
         //    return new QuicRegistration();

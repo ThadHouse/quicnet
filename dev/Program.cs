@@ -7,7 +7,8 @@ namespace quicnet.dev
     {
         static unsafe void Main(string[] args)
         {
-            var api = ApiGenerator.CreateApiImplementation(new NativeQuicApi(), (NativeQuicApi* api) =>
+            var nativeApi = new NativeQuicApi();
+            var api = ApiGenerator.CreateApiImplementation(&nativeApi, (NativeQuicApi* api) =>
             {
                 ;
             });

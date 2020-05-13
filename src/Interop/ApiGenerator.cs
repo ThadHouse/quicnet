@@ -25,14 +25,11 @@ namespace QuicNet.Interop
 
         private static void GenerateDisposeIl(ILGenerator generator, FieldInfo apiField, FieldInfo closeField)
         {
-            var apiLocal = generator.DeclareLocal(apiField.FieldType);
-            generator.Emit(OpCodes.Ldarg_0); // Load this
-            generator.Emit(OpCodes.Ldfld, apiField); // Load API
-            generator.Emit(OpCodes.Stloc_S, apiLocal); // Store API into local variable (Avoids pinning)
+            GC.KeepAlive(apiField);
             generator.Emit(OpCodes.Ldarg_0); // Load this
             generator.Emit(OpCodes.Ldfld, closeField); // load close field
-            generator.Emit(OpCodes.Ldloca_S, apiLocal); // Load address of local
-            generator.Emit(OpCodes.Conv_U); // Convert address to native int, was reference
+            generator.Emit(OpCodes.Ldarg_0); // Load this
+            generator.Emit(OpCodes.Ldfld, apiField); // Load API
             generator.Emit(OpCodes.Callvirt, closeField.FieldType.GetMethod("Invoke"));
             generator.Emit(OpCodes.Ret);
         }
@@ -45,8 +42,8 @@ namespace QuicNet.Interop
             }
 
             generator.Emit(OpCodes.Ldarg_0); // Load this
-            generator.Emit(OpCodes.Ldflda, apiField); // Load address of field
-            generator.Emit(OpCodes.Ldfld, apiField.FieldType.GetField(fieldName)); // Load function pointer
+            generator.Emit(OpCodes.Ldfld, apiField); // Load address of field
+            generator.Emit(OpCodes.Ldfld, typeof(NativeQuicApi).GetField(fieldName)); // Load function pointer
             emitCalli(generator, OpCodes.Calli, CallingConvention.Cdecl, returnType, parameters); // call function pointer
             generator.Emit(OpCodes.Ret);
         }
@@ -69,12 +66,12 @@ namespace QuicNet.Interop
             typeBuilder.AddInterfaceImplementation(typeof(IDisposable));
             typeBuilder.AddInterfaceImplementation(typeof(IQuicInteropApi));
 
-            var apiField = typeBuilder.DefineField("quicApi", typeof(NativeQuicApi), FieldAttributes.Private | FieldAttributes.InitOnly);
+            var apiField = typeBuilder.DefineField("quicApi", typeof(NativeQuicApi*), FieldAttributes.Private | FieldAttributes.InitOnly);
             var closeField = typeBuilder.DefineField("quicClose", typeof(QuicCloseDelegate), FieldAttributes.Private | FieldAttributes.InitOnly);
 
             // Define constructor
             var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName,
-                CallingConventions.HasThis, new Type[] { typeof(NativeQuicApi), typeof(QuicCloseDelegate) });
+                CallingConventions.HasThis, new Type[] { typeof(NativeQuicApi*), typeof(QuicCloseDelegate) });
 
             GenerateConstructorIl(constructor.GetILGenerator(), apiField, closeField);
 
@@ -103,10 +100,10 @@ namespace QuicNet.Interop
 
         // This API will be replaced with Function Pointers once they exist, but for now IL generation is by far the
         // fastest way to generate the QUIC api
-        public static IQuicInteropApi CreateApiImplementation(NativeQuicApi api, QuicCloseDelegate closeDelegate)
+        public unsafe static IQuicInteropApi CreateApiImplementation(NativeQuicApi* api, QuicCloseDelegate closeDelegate)
         {
             var constructor = s_apiConstructor.Value;
-            return (IQuicInteropApi)constructor.Invoke(new object[] { api, closeDelegate });
+            return (IQuicInteropApi)constructor.Invoke(new object[] { Pointer.Box(api, typeof(NativeQuicApi*)), closeDelegate });
         }
     }
 }

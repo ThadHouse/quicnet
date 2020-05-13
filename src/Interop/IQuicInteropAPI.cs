@@ -31,16 +31,16 @@ namespace QuicNet.Interop
         int ConnectionOpen(QuicHandle* session, void* handler, void* context, QuicHandle** connection);
         int ConnectionClose(QuicHandle* connection);
         int ConnectionShutdown(QuicHandle* connection, QuicConnectionShutdownFlags flags, ulong errorCode);
-        int ConnectionStart(QuicHandle* connection, void* family, byte* serverName, ushort serverPort);
+        int ConnectionStart(QuicHandle* connection, QuicAddressFamily family, byte* serverName, ushort serverPort);
 
-        int StreamOpen();
-        int StreamClose();
-        int StreamStart();
-        int StreamShutdown();
-        int StreamSend();
-        int StreamReceiveComplete();
-        int StreamReceiveSetEnabled();
+        int StreamOpen(QuicHandle* connection, QuicStreamOpenFlags flags, void* handler, void* context, QuicHandle** stream);
+        int StreamClose(QuicHandle* stream);
+        int StreamStart(QuicHandle* stream, QuicStreamStartFlags flags);
+        int StreamShutdown(QuicHandle* stream, QuicStreamShutdownFlags flags, ulong errorCode);
+        int StreamSend(QuicHandle* stream, QuicBuffer* buffers, uint bufferCount, QuicSendFlags flags, void* clientSendContext);
+        int StreamReceiveComplete(QuicHandle* stream, ulong bufferLength);
+        int StreamReceiveSetEnabled(QuicHandle* stream, byte isEnabled);
 
-        int DatagramSend();
+        int DatagramSend(QuicHandle* connection, QuicBuffer* buffers, uint bufferCount, QuicSendFlags flags, void* clientSendContext);
     }
 }
