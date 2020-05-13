@@ -6,15 +6,15 @@ namespace QuicNet
 {
     public class QuicApi : IDisposable
     {
-        public QuicRegistration OpenRegistration()
-        {
-            return new QuicRegistration();
-        }
+        //public QuicRegistration OpenRegistration()
+        //{
+        //    return new QuicRegistration();
+        //}
 
-        public SecurityConfiguration CreateSecurityConfiguration()
-        {
-            return new SecurityConfiguration();
-        }
+        //public SecurityConfiguration CreateSecurityConfiguration()
+        //{
+        //    return new SecurityConfiguration();
+        //}
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls

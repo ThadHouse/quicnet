@@ -1,11 +1,17 @@
-﻿using System;
+﻿using QuicNet.Interop;
+using System;
 
 namespace quicnet.dev
 {
     class Program
     {
-        static void Main(string[] args)
+        static unsafe void Main(string[] args)
         {
+            var api = ApiGenerator.CreateApiImplementation(new NativeQuicApi(), (NativeQuicApi* api) =>
+            {
+                ;
+            });
+            api.Dispose();
             Console.WriteLine("Hello World!");
         }
     }
