@@ -10,6 +10,7 @@ namespace QuicNet.Interop
 {
     public static unsafe class ApiGenerator
     {
+
         private static void GenerateConstructorIl(ILGenerator generator, FieldInfo apiField, FieldInfo closeField)
         {
             generator.Emit(OpCodes.Ldarg_0); // Load this
@@ -45,6 +46,37 @@ namespace QuicNet.Interop
             generator.Emit(OpCodes.Ldfld, apiField); // Load address of field
             generator.Emit(OpCodes.Ldfld, typeof(NativeQuicApi).GetField(fieldName)); // Load function pointer
             emitCalli(generator, OpCodes.Calli, CallingConvention.Cdecl, returnType, parameters); // call function pointer
+            generator.Emit(OpCodes.Ret);
+        }
+
+        private static void GenerateCheckedMethodIl(ILGenerator generator, FieldInfo apiField, string fieldName, Type[] parameters, EmitCalliDelegate emitCalli)
+        {
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                generator.Emit(OpCodes.Ldarg, i + 1); // Load parameter, +1 from static
+            }
+
+            generator.Emit(OpCodes.Ldarg_0); // Load this
+            generator.Emit(OpCodes.Ldfld, apiField); // Load address of field
+            generator.Emit(OpCodes.Ldfld, typeof(NativeQuicApi).GetField(fieldName)); // Load function pointer
+            emitCalli(generator, OpCodes.Calli, CallingConvention.Cdecl, typeof(int), parameters); // call function pointer
+
+            generator.Emit(OpCodes.Dup);
+            generator.Emit(OpCodes.Ldc_I4_0);
+            var label = generator.DefineLabel();
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // generate check for failures = < 0
+                generator.Emit(OpCodes.Bge, label);
+            }
+            else
+            {
+                // generate check for failures = > 0
+                generator.Emit(OpCodes.Ble, label);
+            }
+            generator.Emit(OpCodes.Call, typeof(Helpers).GetMethod(nameof(Helpers.CheckException)));
+            generator.MarkLabel(label);
+            generator.Emit(OpCodes.Pop);
             generator.Emit(OpCodes.Ret);
         }
 
@@ -84,7 +116,17 @@ namespace QuicNet.Interop
                 var parameters = method.GetParameters().Select(x => x.ParameterType).ToArray();
                 var methodBuilder = typeBuilder.DefineMethod(method.Name, MethodAttributes.Virtual | MethodAttributes.Public, method.ReturnType, parameters);
                 methodBuilder.SetImplementationFlags(MethodImplAttributes.AggressiveInlining);
-                GenerateMethodIl(methodBuilder.GetILGenerator(), apiField, method.Name, parameters, method.ReturnType, emitCalli);
+
+                if (method.GetCustomAttribute<CheckResultAttribute>() != null)
+                {
+                    GenerateCheckedMethodIl(methodBuilder.GetILGenerator(), apiField, method.Name, parameters, emitCalli);
+                }
+                else
+                {
+                    GenerateMethodIl(methodBuilder.GetILGenerator(), apiField, method.Name, parameters, method.ReturnType, emitCalli);
+                }
+
+
             }
 
 

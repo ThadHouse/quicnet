@@ -1,12 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
+using QuicNet.Interop;
 
 namespace QuicNet
 {
-    public class QuicApi : IDisposable
+    public unsafe class QuicApi : IDisposable
     {
+        private readonly IQuicInteropApi m_nativeApi;
 
+        public unsafe QuicApi()
+        {
+            NativeQuicApi* nativeApi = null;
+            int status = QuicNativeMethods.MsQuicOpen(&nativeApi);
+            if (status != 0)
+            {
+                Marshal.ThrowExceptionForHR(status);
+                m_nativeApi = null!;
+                return;
+            }
+            m_nativeApi = ApiGenerator.CreateApiImplementation(nativeApi, QuicNativeMethods.MsQuicClose);
+        }
 
         //public QuicRegistration OpenRegistration()
         //{
@@ -30,6 +45,8 @@ namespace QuicNet
                     // TODO: dispose managed state (managed objects).
                 }
 
+
+                m_nativeApi?.Dispose();
                 // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
                 // TODO: set large fields to null.
 
@@ -38,11 +55,11 @@ namespace QuicNet
         }
 
         // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-        // ~QuicApi()
-        // {
-        //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-        //   Dispose(false);
-        // }
+        ~QuicApi()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(false);
+        }
 
         // This code added to correctly implement the disposable pattern.
         public void Dispose()

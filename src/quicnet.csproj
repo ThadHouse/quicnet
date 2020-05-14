@@ -15,6 +15,14 @@
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="runtimes\**" PackagePath="runtimes" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="runtimes\win-x64\native\msquic.dll" Link="msquic.dll" CopyToOutputDirectory="Always" />
+  </ItemGroup>
   
 
   <ItemGroup>

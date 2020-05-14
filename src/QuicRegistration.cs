@@ -1,11 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using QuicNet.Interop;
 
 namespace QuicNet
 {
     public class QuicRegistration : IDisposable
     {
+        private readonly IQuicInteropApi m_nativeApi;
+
+        internal QuicRegistration(IQuicInteropApi nativeApi)
+        {
+            m_nativeApi = nativeApi;
+            //m_nativeApi.RegistrationOpen()
+        }
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls

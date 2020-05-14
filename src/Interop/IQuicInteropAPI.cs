@@ -10,37 +10,37 @@ namespace QuicNet.Interop
         void* GetContext(QuicHandle* handle);
         void SetCallbackHandler(QuicHandle* handle, void* handler, void* context);
 
-        int SetParam(QuicHandle* handle, QuicParamLevel level, uint param, uint bufferLength, void* buffer);
-        int GetParam(QuicHandle* handle, QuicParamLevel level, uint param, uint* bufferLength, void* buffer);
+        [CheckResult] void SetParam(QuicHandle* handle, QuicParamLevel level, uint param, uint bufferLength, void* buffer);
+        [CheckResult] void GetParam(QuicHandle* handle, QuicParamLevel level, uint param, uint* bufferLength, void* buffer);
 
-        int RegistrationOpen(QuicRegistrationConfig* config, QuicHandle** registration);
-        int RegistrationClose(QuicHandle* registration);
+        [CheckResult] void RegistrationOpen(QuicRegistrationConfig* config, QuicHandle** registration);
+        [CheckResult] void RegistrationClose(QuicHandle* registration);
 
-        int SecConfigCreate(QuicHandle* registration, QuicSecConfigFlags flags, void* certificate, byte* principal, void* context, void* completionHandler);
-        int SecConfigDelete(QuicSecConfig* securityConfig);
+        [CheckResult] void SecConfigCreate(QuicHandle* registration, QuicSecConfigFlags flags, void* certificate, byte* principal, void* context, void* completionHandler);
+        [CheckResult] void SecConfigDelete(QuicSecConfig* securityConfig);
 
-        int SessionOpen(QuicHandle* registration, QuicBuffer* aplnBuffers, uint aplnBufferCount, void* context, QuicHandle** session);
-        int SessionClose(QuicHandle* session);
-        int SessionShutdown(QuicHandle* session, QuicConnectionShutdownFlags flags, ulong errorCode);
+        [CheckResult] void SessionOpen(QuicHandle* registration, QuicBuffer* aplnBuffers, uint aplnBufferCount, void* context, QuicHandle** session);
+        [CheckResult] void SessionClose(QuicHandle* session);
+        [CheckResult] void SessionShutdown(QuicHandle* session, QuicConnectionShutdownFlags flags, ulong errorCode);
 
-        int ListenerOpen(QuicHandle* session, void* handler, void* context, QuicHandle** listener);
-        int ListenerClose(QuicHandle* listener);
-        int ListenerStart(QuicHandle* listener, void* localAddress);
-        int ListenerStop(QuicHandle* listener);
+        [CheckResult] void ListenerOpen(QuicHandle* session, void* handler, void* context, QuicHandle** listener);
+        [CheckResult] void ListenerClose(QuicHandle* listener);
+        [CheckResult] void ListenerStart(QuicHandle* listener, void* localAddress);
+        [CheckResult] void ListenerStop(QuicHandle* listener);
 
-        int ConnectionOpen(QuicHandle* session, void* handler, void* context, QuicHandle** connection);
-        int ConnectionClose(QuicHandle* connection);
-        int ConnectionShutdown(QuicHandle* connection, QuicConnectionShutdownFlags flags, ulong errorCode);
-        int ConnectionStart(QuicHandle* connection, QuicAddressFamily family, byte* serverName, ushort serverPort);
+        [CheckResult] void ConnectionOpen(QuicHandle* session, void* handler, void* context, QuicHandle** connection);
+        [CheckResult] void ConnectionClose(QuicHandle* connection);
+        [CheckResult] void ConnectionShutdown(QuicHandle* connection, QuicConnectionShutdownFlags flags, ulong errorCode);
+        [CheckResult] void ConnectionStart(QuicHandle* connection, QuicAddressFamily family, byte* serverName, ushort serverPort);
 
-        int StreamOpen(QuicHandle* connection, QuicStreamOpenFlags flags, void* handler, void* context, QuicHandle** stream);
-        int StreamClose(QuicHandle* stream);
-        int StreamStart(QuicHandle* stream, QuicStreamStartFlags flags);
-        int StreamShutdown(QuicHandle* stream, QuicStreamShutdownFlags flags, ulong errorCode);
-        int StreamSend(QuicHandle* stream, QuicBuffer* buffers, uint bufferCount, QuicSendFlags flags, void* clientSendContext);
-        int StreamReceiveComplete(QuicHandle* stream, ulong bufferLength);
-        int StreamReceiveSetEnabled(QuicHandle* stream, byte isEnabled);
+        [CheckResult] void StreamOpen(QuicHandle* connection, QuicStreamOpenFlags flags, void* handler, void* context, QuicHandle** stream);
+        [CheckResult] void StreamClose(QuicHandle* stream);
+        [CheckResult] void StreamStart(QuicHandle* stream, QuicStreamStartFlags flags);
+        [CheckResult] void StreamShutdown(QuicHandle* stream, QuicStreamShutdownFlags flags, ulong errorCode);
+        [CheckResult] void StreamSend(QuicHandle* stream, QuicBuffer* buffers, uint bufferCount, QuicSendFlags flags, void* clientSendContext);
+        [CheckResult] void StreamReceiveComplete(QuicHandle* stream, ulong bufferLength);
+        [CheckResult] void StreamReceiveSetEnabled(QuicHandle* stream, byte isEnabled);
 
-        int DatagramSend(QuicHandle* connection, QuicBuffer* buffers, uint bufferCount, QuicSendFlags flags, void* clientSendContext);
+        [CheckResult] void DatagramSend(QuicHandle* connection, QuicBuffer* buffers, uint bufferCount, QuicSendFlags flags, void* clientSendContext);
     }
 }
