@@ -1,4 +1,5 @@
-﻿using QuicNet.Interop;
+﻿using QuicNet;
+using QuicNet.Interop;
 using System;
 
 namespace quicnet.dev
@@ -7,15 +8,8 @@ namespace quicnet.dev
     {
         static unsafe void Main(string[] args)
         {
-            NativeQuicApi* nativeApi = null;
-            var success = QuicNativeMethods.MsQuicOpen(&nativeApi);
-            if (success > 0)
-            {
-                Console.WriteLine("API Failure");
-                return;
-            }
-            var api = ApiGenerator.CreateApiImplementation(nativeApi, QuicNativeMethods.MsQuicClose);
-            api.Dispose();
+            using var api = new QuicApi();
+            using var registration = api.OpenRegistration();
             Console.WriteLine("Hello World!");
         }
     }

@@ -1,53 +1,110 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using QuicNet.Interop;
 
 namespace QuicNet
 {
-    public class QuicRegistration : IDisposable
+    public readonly struct QuicRegistrationConfig : IEquatable<QuicRegistrationConfig>
     {
-        private readonly IQuicInteropApi m_nativeApi;
+        public QuicRegistrationConfig(string? appName, QuicExecutionProfile executionProfile = 0)
+        {
+            AppName = appName;
+            ExecutionProfile = executionProfile;
+        }
 
-        internal QuicRegistration(IQuicInteropApi nativeApi)
+        public string? AppName { get; }
+        public QuicExecutionProfile ExecutionProfile { get; }
+
+        public override bool Equals(object? obj)
+        {
+            return obj is QuicRegistrationConfig config && Equals(config);
+        }
+
+        public bool Equals(QuicRegistrationConfig other)
+        {
+            return AppName == other.AppName &&
+                   ExecutionProfile == other.ExecutionProfile;
+        }
+
+        public override int GetHashCode()
+        {
+            var hashCode = -125507555;
+            hashCode = hashCode * -1521134295 + EqualityComparer<string?>.Default.GetHashCode(AppName);
+            hashCode = hashCode * -1521134295 + ExecutionProfile.GetHashCode();
+            return hashCode;
+        }
+
+        public static bool operator ==(QuicRegistrationConfig left, QuicRegistrationConfig right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(QuicRegistrationConfig left, QuicRegistrationConfig right)
+        {
+            return !(left == right);
+        }
+    }
+
+    public sealed class QuicRegistration : IDisposable
+    {
+
+        private readonly IQuicInteropApi m_nativeApi;
+        internal unsafe readonly QuicHandle* m_handle;
+
+        internal unsafe QuicRegistration(IQuicInteropApi nativeApi)
         {
             m_nativeApi = nativeApi;
-            //m_nativeApi.RegistrationOpen()
+            QuicHandle* handle = null;
+            m_nativeApi.RegistrationOpen(null, &handle);
+            m_handle = handle;
+        }
+
+        internal unsafe QuicRegistration(QuicRegistrationConfig config, IQuicInteropApi nativeApi)
+        {
+            m_nativeApi = nativeApi;
+            QuicHandle* handle = null;
+            QuicNativeRegistrationConfig nativeRegConfig = new QuicNativeRegistrationConfig
+            {
+                AppName = null,
+                ExecutionProfile = config.ExecutionProfile
+            };
+
+            if (config.AppName != null)
+            {
+                int appNameLength = config.AppName.Length;
+                int maxAppNameLength = Encoding.UTF8.GetMaxByteCount(appNameLength);
+                Span<byte> appNameSpan = appNameLength < 256 ? stackalloc byte[256] : new byte[maxAppNameLength];
+
+                fixed (byte* appNamePtr = appNameSpan)
+                {
+                    fixed (char* strNamePtr = config.AppName)
+                    {
+                        int actualLength = Encoding.UTF8.GetBytes(strNamePtr, appNameLength, appNamePtr, maxAppNameLength);
+                        appNameSpan[actualLength] = 0; // null terminator
+                    }
+                    nativeRegConfig.AppName = appNamePtr;
+                    m_nativeApi.RegistrationOpen(&nativeRegConfig, &handle);
+                }
+            }
+            else
+            {
+                m_nativeApi.RegistrationOpen(&nativeRegConfig, &handle);
+            }
+            m_handle = handle;
+        }
+
+        public Task<QuicSecurityConfiguration> CreateSecurityConfiguration()
+        {
+            return QuicSecurityConfiguration.CreateQuicSecurityConfig(m_nativeApi, this);
         }
 
         #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
 
-        protected virtual void Dispose(bool disposing)
+        public unsafe void Dispose()
         {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    // TODO: dispose managed state (managed objects).
-                }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
-
-                disposedValue = true;
-            }
-        }
-
-        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-        // ~QuicRegistration()
-        // {
-        //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-        //   Dispose(false);
-        // }
-
-        // This code added to correctly implement the disposable pattern.
-        public void Dispose()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
-            GC.SuppressFinalize(this);
+            m_nativeApi.RegistrationClose(m_handle);
         }
         #endregion
     }

@@ -61,7 +61,10 @@ namespace QuicNet.Interop
             generator.Emit(OpCodes.Ldfld, typeof(NativeQuicApi).GetField(fieldName)); // Load function pointer
             emitCalli(generator, OpCodes.Calli, CallingConvention.Cdecl, typeof(int), parameters); // call function pointer
 
-            generator.Emit(OpCodes.Dup);
+            var local = generator.DeclareLocal(typeof(int));
+            generator.Emit(OpCodes.Stloc_0);
+            generator.Emit(OpCodes.Ldloc_0);
+
             generator.Emit(OpCodes.Ldc_I4_0);
             var label = generator.DefineLabel();
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -74,9 +77,9 @@ namespace QuicNet.Interop
                 // generate check for failures = > 0
                 generator.Emit(OpCodes.Ble, label);
             }
+            generator.Emit(OpCodes.Ldloc_0);
             generator.Emit(OpCodes.Call, typeof(Helpers).GetMethod(nameof(Helpers.CheckException)));
             generator.MarkLabel(label);
-            generator.Emit(OpCodes.Pop);
             generator.Emit(OpCodes.Ret);
         }
 

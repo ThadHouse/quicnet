@@ -9,41 +9,41 @@ using System.Text;
 
 namespace QuicNet.Interop
 {
-    public unsafe struct QuicRegistrationConfig
+    public unsafe ref struct QuicNativeRegistrationConfig
     {
         public byte* AppName; //UTF8 string
         public QuicExecutionProfile ExecutionProfile;
     }
 
-    public unsafe struct QuicCertificateHash
+    public unsafe struct QuicNativeCertificateHash
     {
         public fixed byte ShaHash[20];
     }
 
-    public unsafe struct QuicCertificateHashStore
+    public unsafe struct QuicNativeCertificateHashStore
     {
         public QuicCertificateHashStoreFlags Flags;
         public fixed byte ShaHash[20];
         public fixed byte StoreName[128];
     }
 
-    public unsafe struct QuicCertificateFile
+    public unsafe struct QuicNativeCertificateFile
     {
         public byte* PrivateKeyFile;
         public byte* CertificateFile;
     }
 
-    public unsafe struct QuicBuffer
+    public unsafe struct QuicNativeBuffer
     {
         public uint Length;
         public byte* Buffer;
     }
 
-    public unsafe struct QuicNewConnectionInfo
+    public unsafe struct QuicNativeNewConnectionInfo
     {
         public uint QuicVersion;
-        public QuicAddr* LocalAddress;
-        public QuicAddr* RemoteAddress;
+        public QuicNativeAddr* LocalAddress;
+        public QuicNativeAddr* RemoteAddress;
         public uint CryptoBufferLength;
         public ushort ClientAplnListLength;
         public ushort ServerNameLength;
@@ -56,7 +56,7 @@ namespace QuicNet.Interop
 
 
 
-    public unsafe struct QuicStatistics
+    public unsafe struct QuicNativeStatistics
     {
 
         public unsafe struct QuicStatisticsTiming
@@ -116,7 +116,7 @@ namespace QuicNet.Interop
 
 
 
-    public unsafe struct QuicListenerStatistics
+    public unsafe struct QuicNativeListenerStatistics
     {
         public unsafe struct QuicListenerStatisticsRecv
         {
@@ -133,13 +133,13 @@ namespace QuicNet.Interop
         public QuicListenerStatisticsBinding Binding;
     }
 
-    public struct QuicListenerEvent
+    public struct QuicNativeListenerEvent
     {
         public unsafe struct QuicListenerEventNewConnection
         {
-            public QuicNewConnectionInfo* Info;
+            public QuicNativeNewConnectionInfo* Info;
             public QuicHandle* Connection;
-            public QuicSecConfig* SecurityConfiguration;
+            public QuicNativeSecConfig* SecurityConfiguration;
         }
 
         [StructLayout(LayoutKind.Explicit)]
@@ -154,7 +154,7 @@ namespace QuicNet.Interop
         public QuicListenerEventUnion Data;
     }
 
-    public struct QuicConnectionEvent
+    public struct QuicNativeConnectionEvent
     {
         public QuicConnectionEventType Type;
         public QuicConnectionEventUnion Data;
@@ -244,7 +244,7 @@ namespace QuicNet.Interop
 
             public unsafe struct QuicConnectionEventDatagramReceived
             {
-                public QuicBuffer* Buffer;
+                public QuicNativeBuffer* Buffer;
                 public QuicReceiveFlags Flags;
             }
 
@@ -256,7 +256,7 @@ namespace QuicNet.Interop
         }
     }
 
-    public unsafe struct QuicStreamEvent
+    public unsafe struct QuicNativeStreamEvent
     {
         public QuicStreamEventType Type;
         public QuicStreamEventUnion Data;
@@ -290,7 +290,7 @@ namespace QuicNet.Interop
             {
                 public ulong AbsoluteOffset;
                 public ulong TotalBufferLength;
-                public QuicBuffer* Buffers;
+                public QuicNativeBuffer* Buffers;
                 public uint BufferCount;
                 public QuicReceiveFlags Flags;
             }
@@ -323,13 +323,13 @@ namespace QuicNet.Interop
         }
     }
 
-    public struct QuicAddr
+    public struct QuicNativeAddr
     {
 
     }
 
     // Empty struct, really an opaque ptr
-    public struct QuicSecConfig
+    public struct QuicNativeSecConfig
     {
 
     }

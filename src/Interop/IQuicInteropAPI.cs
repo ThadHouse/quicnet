@@ -13,13 +13,13 @@ namespace QuicNet.Interop
         [CheckResult] void SetParam(QuicHandle* handle, QuicParamLevel level, uint param, uint bufferLength, void* buffer);
         [CheckResult] void GetParam(QuicHandle* handle, QuicParamLevel level, uint param, uint* bufferLength, void* buffer);
 
-        [CheckResult] void RegistrationOpen(QuicRegistrationConfig* config, QuicHandle** registration);
+        [CheckResult] void RegistrationOpen(QuicNativeRegistrationConfig* config, QuicHandle** registration);
         [CheckResult] void RegistrationClose(QuicHandle* registration);
 
         [CheckResult] void SecConfigCreate(QuicHandle* registration, QuicSecConfigFlags flags, void* certificate, byte* principal, void* context, void* completionHandler);
-        [CheckResult] void SecConfigDelete(QuicSecConfig* securityConfig);
+        [CheckResult] void SecConfigDelete(QuicNativeSecConfig* securityConfig);
 
-        [CheckResult] void SessionOpen(QuicHandle* registration, QuicBuffer* aplnBuffers, uint aplnBufferCount, void* context, QuicHandle** session);
+        [CheckResult] void SessionOpen(QuicHandle* registration, QuicNativeBuffer* aplnBuffers, uint aplnBufferCount, void* context, QuicHandle** session);
         [CheckResult] void SessionClose(QuicHandle* session);
         [CheckResult] void SessionShutdown(QuicHandle* session, QuicConnectionShutdownFlags flags, ulong errorCode);
 
@@ -37,10 +37,10 @@ namespace QuicNet.Interop
         [CheckResult] void StreamClose(QuicHandle* stream);
         [CheckResult] void StreamStart(QuicHandle* stream, QuicStreamStartFlags flags);
         [CheckResult] void StreamShutdown(QuicHandle* stream, QuicStreamShutdownFlags flags, ulong errorCode);
-        [CheckResult] void StreamSend(QuicHandle* stream, QuicBuffer* buffers, uint bufferCount, QuicSendFlags flags, void* clientSendContext);
+        [CheckResult] void StreamSend(QuicHandle* stream, QuicNativeBuffer* buffers, uint bufferCount, QuicSendFlags flags, void* clientSendContext);
         [CheckResult] void StreamReceiveComplete(QuicHandle* stream, ulong bufferLength);
         [CheckResult] void StreamReceiveSetEnabled(QuicHandle* stream, byte isEnabled);
 
-        [CheckResult] void DatagramSend(QuicHandle* connection, QuicBuffer* buffers, uint bufferCount, QuicSendFlags flags, void* clientSendContext);
+        [CheckResult] void DatagramSend(QuicHandle* connection, QuicNativeBuffer* buffers, uint bufferCount, QuicSendFlags flags, void* clientSendContext);
     }
 }

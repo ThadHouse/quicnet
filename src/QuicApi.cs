@@ -23,10 +23,15 @@ namespace QuicNet
             m_nativeApi = ApiGenerator.CreateApiImplementation(nativeApi, QuicNativeMethods.MsQuicClose);
         }
 
-        //public QuicRegistration OpenRegistration()
-        //{
-        //    return new QuicRegistration();
-        //}
+        public QuicRegistration OpenRegistration()
+        {
+            return new QuicRegistration(m_nativeApi);
+        }
+
+        public QuicRegistration OpenRegistration(QuicRegistrationConfig registrationConfig)
+        {
+            return new QuicRegistration(registrationConfig, m_nativeApi);
+        }
 
         //public SecurityConfiguration CreateSecurityConfiguration()
         //{
