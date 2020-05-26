@@ -1,45 +1,75 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
+using System.Threading.Channels;
+using System.Threading.Tasks;
+using QuicNet.Interop;
 
 namespace QuicNet
 {
-    public class QuicListener : IDisposable
+    public sealed class QuicListener : IDisposable
     {
+        private readonly IQuicInteropApi m_nativeApi;
+        private readonly unsafe QuicHandle* m_handle;
 
-        #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
+        private readonly GCHandle m_gcHandle;
+        private static unsafe readonly QuicListenerCallback m_listenerCallback = StaticHandler;
+        private static unsafe readonly void* m_nativeListenerCallback = (void*)Marshal.GetFunctionPointerForDelegate(m_listenerCallback);
 
-        protected virtual void Dispose(bool disposing)
+        private readonly Channel<QuicConnection> connectionQueue;
+
+        internal unsafe QuicListener(IQuicInteropApi nativeApi, QuicSession session)
         {
-            if (!disposedValue)
+            m_nativeApi = nativeApi;
+
+            connectionQueue = Channel.CreateBounded<QuicConnection>(new BoundedChannelOptions(128)
             {
-                if (disposing)
-                {
-                    // TODO: dispose managed state (managed objects).
-                }
+                SingleWriter = true,
+                SingleReader = true,
+            });
 
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
+            m_gcHandle = GCHandle.Alloc(this);
 
-                disposedValue = true;
-            }
+            QuicHandle* handle = null;
+
+            m_nativeApi.ListenerOpen(session.m_handle, m_nativeListenerCallback, (void*)GCHandle.ToIntPtr(m_gcHandle), &handle);
+
+            m_handle = handle;
+
         }
 
-        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-        // ~QuicListener()
-        // {
-        //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-        //   Dispose(false);
-        // }
-
-        // This code added to correctly implement the disposable pattern.
-        public void Dispose()
+        private unsafe int Handler(QuicNativeListenerEvent* evnt)
         {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
-            GC.SuppressFinalize(this);
+            return 0;
+        }
+
+        private unsafe static int StaticHandler(QuicHandle* handle, void* context, QuicNativeListenerEvent* evnt)
+        {
+            var managedHandle = GCHandle.FromIntPtr((IntPtr)context);
+            var listener = (QuicListener)managedHandle.Target;
+            return listener.Handler(evnt);
+        }
+
+        public async ValueTask<QuicConnection> AcceptConnectionAsync(CancellationToken token = default)
+        {
+            return await connectionQueue.Reader.ReadAsync(token).ConfigureAwait(false);
+
+        }
+
+        public unsafe void Start()
+        {
+            m_nativeApi.ListenerStart(m_handle, null);
+        }
+
+        #region IDisposable Support
+        public unsafe void Dispose()
+        {
+            connectionQueue.Writer.TryComplete();
+            m_nativeApi.ListenerStop(m_handle);
+            m_nativeApi.ListenerClose(m_handle);
+            m_gcHandle.Free();
         }
         #endregion
     }

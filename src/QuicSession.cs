@@ -1,45 +1,57 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
+using QuicNet.Interop;
 
 namespace QuicNet
 {
-    public class QuicSession : IDisposable
+    public sealed class QuicSession : IDisposable
     {
+        private readonly IQuicInteropApi m_nativeApi;
+        internal readonly unsafe QuicHandle* m_handle;
 
-        #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
-
-        protected virtual void Dispose(bool disposing)
+        internal unsafe QuicSession(IQuicInteropApi nativeApi, QuicRegistration registration, byte[][] apln)
         {
-            if (!disposedValue)
+            m_nativeApi = nativeApi;
+
+            QuicHandle* handle = null;
+
+            QuicNativeBuffer* buffers = stackalloc QuicNativeBuffer[apln.Length];
+
+            try
             {
-                if (disposing)
+                for (int i = 0; i < apln.Length; i++)
                 {
-                    // TODO: dispose managed state (managed objects).
+                    byte* allocated = (byte*)Marshal.AllocHGlobal((IntPtr)apln[i].Length);
+                    buffers[i].Buffer = allocated;
+                    buffers[i].Length = (uint)apln[i].Length;
+                    apln[i].AsSpan().CopyTo(new Span<byte>(allocated, apln[i].Length));
+                    
                 }
 
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
-
-                disposedValue = true;
+                m_nativeApi.SessionOpen(registration.m_handle, buffers, (uint)apln.Length, null, &handle);
+                m_handle = handle;
+            }
+            finally
+            {
+                for (int i = 0; i < apln.Length; i++)
+                {
+                    Marshal.FreeHGlobal((IntPtr)buffers[i].Buffer);
+                }
             }
         }
 
-        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-        // ~QuicSession()
-        // {
-        //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-        //   Dispose(false);
-        // }
-
-        // This code added to correctly implement the disposable pattern.
-        public void Dispose()
+        public unsafe void Shutdown(QuicConnectionShutdownFlags flags, ulong errorCode)
         {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
-            GC.SuppressFinalize(this);
+            m_nativeApi.SessionShutdown(m_handle, flags, errorCode);
+        }
+
+
+        #region IDisposable Support
+        public unsafe void Dispose()
+        {
+            m_nativeApi.SessionClose(m_handle);
         }
         #endregion
     }
