@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.ConstrainedExecution;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using QuicNet.Interop;
@@ -95,9 +97,42 @@ namespace QuicNet
             m_handle = handle;
         }
 
-        public Task<QuicSecurityConfiguration> CreateSecurityConfiguration()
+        public QuicSession CreateSession()
+        {
+            return new QuicSession(m_nativeApi, this, Array.Empty<byte[]>());
+        }
+
+        public unsafe Task<QuicSecurityConfiguration> CreateSecurityConfiguration()
         {
             return QuicSecurityConfiguration.CreateQuicSecurityConfig(m_nativeApi, this);
+        }
+
+        public unsafe Task<QuicSecurityConfiguration> CreateSecurityConfiguration(string certFile, string keyName)
+        {
+            return QuicSecurityConfiguration.CreateQuicSecurityConfig(m_nativeApi, this, certFile, keyName, false);
+        }
+
+        public unsafe Task<QuicSecurityConfiguration> CreateSecurityConfiguration(X509Certificate certificate)
+        {
+            return QuicSecurityConfiguration.CreateQuicSecurityConfig(m_nativeApi, this, certificate);
+        }
+
+        public unsafe Task<QuicSecurityConfiguration> CreateSecurityConfiguration(ReadOnlySpan<byte> hash)
+        {
+#pragma warning disable CA1303 // Do not pass literals as localized parameters
+            if (hash.Length != 20) throw new ArgumentOutOfRangeException(nameof(hash), "Hash must be 20 bytes long");
+#pragma warning restore CA1303 // Do not pass literals as localized parameters
+
+            var nativeHash = new QuicNativeCertificateHash();
+            hash.CopyTo(new Span<byte>(nativeHash.ShaHash, 20));
+
+
+            return QuicSecurityConfiguration.CreateQuicSecurityConfig(m_nativeApi, this, nativeHash, null, false);
+        }
+
+        public unsafe Task<QuicConnection> ConnectToRemote(QuicAddressFamily addressFamily, string serverName, ushort serverPort)
+        {
+
         }
 
         #region IDisposable Support

@@ -13,6 +13,7 @@ namespace QuicNet
     {
         private readonly IQuicInteropApi m_nativeApi;
         private readonly unsafe QuicHandle* m_handle;
+        private readonly QuicSession m_session;
 
         private readonly GCHandle m_gcHandle;
         private static unsafe readonly QuicListenerCallback m_listenerCallback = StaticHandler;
@@ -23,6 +24,7 @@ namespace QuicNet
         internal unsafe QuicListener(IQuicInteropApi nativeApi, QuicSession session)
         {
             m_nativeApi = nativeApi;
+            m_session = session;
 
             connectionQueue = Channel.CreateBounded<QuicConnection>(new BoundedChannelOptions(128)
             {
@@ -42,6 +44,23 @@ namespace QuicNet
 
         private unsafe int Handler(QuicNativeListenerEvent* evnt)
         {
+            try
+            {
+                switch (evnt->Type)
+                {
+                    case QuicListenerEventType.NewConnection:
+                        connectionQueue.Writer.TryWrite(new QuicConnection(m_nativeApi, &evnt->Data.NewConnection));
+                        break;
+                    default:
+                        break;
+                }
+            }
+#pragma warning disable CA1031 // Do not catch general exception types
+            catch
+#pragma warning restore CA1031 // Do not catch general exception types
+            {
+
+            }
             return 0;
         }
 

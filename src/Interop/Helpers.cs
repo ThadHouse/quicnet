@@ -15,7 +15,7 @@ namespace QuicNet.Interop
             {
                 // generate check for success = >= 0
 #pragma warning disable CA1303 // Do not pass literals as localized parameters
-                if (result < 0) throw new Exception("Quic Exception"); // TODO, make this a better exception
+                if (result < 0) throw Marshal.GetExceptionForHR(result);
             }
             else
             {

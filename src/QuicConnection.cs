@@ -1,46 +1,69 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks;
+using QuicNet.Interop;
 
 namespace QuicNet
 {
-    public class QuicConnection : IDisposable
+    public sealed class QuicConnection : IDisposable
     {
+        private readonly IQuicInteropApi m_nativeApi;
+        private unsafe readonly QuicHandle* m_handle;
 
-        #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
-
-        protected virtual void Dispose(bool disposing)
+        internal unsafe QuicConnection(IQuicInteropApi api, QuicNativeListenerEvent.QuicListenerEventNewConnection* newConnection)
         {
-            if (!disposedValue)
+            m_nativeApi = api;
+        }
+
+        internal unsafe QuicConnection(IQuicInteropApi api, QuicSession session)
+        {
+            m_nativeApi = api;
+            QuicHandle* handle = null;
+            api.ConnectionOpen(session.m_handle, null, null, &handle);
+            m_handle = handle;
+        }
+
+        private unsafe int Handler(QuicNativeConnectionEvent* evnt)
+        {
+            GC.KeepAlive(m_nativeApi);
+            void* v = (void*)evnt;
+            return 0;
+        }
+
+        private unsafe static int StaticHandler(QuicHandle* handle, void* context, QuicNativeConnectionEvent* evnt)
+        {
+            var managedHandle = GCHandle.FromIntPtr((IntPtr)context);
+            var connection = (QuicConnection)managedHandle.Target;
+            return connection.Handler(evnt);
+        }
+
+        public unsafe void Connect(QuicAddressFamily addressFamily, string serverName, ushort serverPort)
+        {
+            if (serverName == null) throw new ArgumentNullException(nameof(serverName));
+            var serverNameMaxLength = Encoding.UTF8.GetMaxByteCount(serverName.Length);
+            Span<byte> serverNameSpan = serverNameMaxLength < 256 ? stackalloc byte[serverNameMaxLength] : new byte[serverNameMaxLength];
+
+            fixed (byte* serverNamePtr = serverNameSpan)
             {
-                if (disposing)
+                fixed (char* serverNameStrPtr = serverName)
                 {
-                    // TODO: dispose managed state (managed objects).
+                    var actualLength = Encoding.UTF8.GetBytes(serverNameStrPtr, serverName.Length, serverNamePtr, serverNameMaxLength);
+                    serverNameSpan[actualLength] = 0;
                 }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
-
-                disposedValue = true;
+                m_nativeApi.ConnectionStart(m_handle, addressFamily, serverNamePtr, serverPort);
             }
         }
 
-        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-        // ~QuicConnection()
-        // {
-        //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-        //   Dispose(false);
-        // }
-
-        // This code added to correctly implement the disposable pattern.
-        public void Dispose()
+        public unsafe void Shutdown(QuicConnectionShutdownFlags flags, ulong error)
         {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
-            GC.SuppressFinalize(this);
+            m_nativeApi.ConnectionShutdown(m_handle, flags, error);
         }
-        #endregion
+
+        public unsafe void Dispose()
+        {
+            m_nativeApi.ConnectionClose(m_handle);
+        }
     }
 }

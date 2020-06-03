@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "quicnet.dev": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}
